@@ -90,7 +90,6 @@ class JsonRpc_Server {
 			);
 		}
 
-		$request = json_decode(file_get_contents('php://input'));
 		header('content-type: text/javascript');
 		echo json_encode($response);
 	}

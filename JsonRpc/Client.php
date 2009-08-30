@@ -44,6 +44,13 @@ class JsonRpc_Client {
 	 * @var string
 	 */
 	protected $_url;
+	
+	/**
+	 * json decode returns an associative array
+	 * 
+	 * @var boolean
+	 */
+	protected $_assoc = false;
 
 	/**
 	 * Notification mode
@@ -56,9 +63,11 @@ class JsonRpc_Client {
 	 * Constructor
 	 *
 	 * @param string $url 
+	 * @param boolean $assoc
 	 */
-	public function __construct($url) {
+	public function __construct($url, $assoc = false) {
 		$this->_url = $url;
+		$this->_assoc = $assoc;
 	}
 
 	/**
@@ -98,19 +107,30 @@ class JsonRpc_Client {
 			throw new Exception('Unable to connect to ' . $this->_url);
 		}
 
-		$response = json_decode($response);
+		$response = json_decode($response, $this->_assoc);
 		if ($response === null) {
 			throw new Exception('Malformed response');
 		}
-
-		if ($response->id != $request['id']) {
-			throw new Exception('Incorrect response id. Expected:' . $request['id'] . ' Received:' . $response->id);
+		if($this->_assoc) {
+			if ($response['id'] != $request['id']) {
+				throw new Exception('Incorrect response id. Expected:' . $request['id'] . ' Received:' . $response['id']);
+			}
+	
+			if (!is_null($response['error'])) {
+				throw new Exception('JSON-RPC Request Error: ' . $response['error']);
+			}
+	
+			return $this->_notification ? true : $response['result'];
+		} else {
+			if ($response->id != $request['id']) {
+				throw new Exception('Incorrect response id. Expected:' . $request['id'] . ' Received:' . $response->id);
+			}
+	
+			if (!is_null($response->error)) {
+				throw new Exception('JSON-RPC Request Error: ' . $response->error);
+			}
+	
+			return $this->_notification ? true : $response->result;
 		}
-
-		if (!is_null($response->error)) {
-			throw new Exception('JSON-RPC Request Error: ' . $response->error);
-		}
-
-		return $this->_notification ? true : $response->result;
 	}
 }
